@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive KPI Dashboard — Aldo Guzman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#040d1a;--card:#0b1d30;--card2:#0e2236;--border:#122840;
+    --blue:#2d8cf0;--teal:#0ee7c2;--green:#10c98a;--amber:#f0a832;--red:#f05c5c;
+    --text:#e8f0fe;--muted:#7a9bb8;--dim:#3a5872;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(45,140,240,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(45,140,240,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+  .wrap{max-width:1100px;margin:0 auto;padding:48px 32px;position:relative;}
+  .back{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:40px;transition:color 0.2s;}
+  .back:hover{color:var(--blue);}
+
+  .proj-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(45,140,240,0.1);border:1px solid rgba(45,140,240,0.25);border-radius:20px;padding:4px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:0.08em;margin-bottom:16px;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,48px);font-weight:800;line-height:1.1;margin-bottom:12px;}
+  .proj-sub{font-size:16px;color:var(--muted);font-weight:300;max-width:680px;line-height:1.7;margin-bottom:40px;}
+
+  /* FILTER BAR */
+  .filter-bar{display:flex;gap:10px;margin-bottom:32px;flex-wrap:wrap;}
+  .filter-btn{padding:7px 18px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;}
+  .filter-btn.active,.filter-btn:hover{background:rgba(45,140,240,0.15);border-color:rgba(45,140,240,0.4);color:var(--blue);}
+
+  /* KPI CARDS */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:border-color 0.2s,transform 0.2s;}
+  .kpi:hover{border-color:rgba(45,140,240,0.35);transform:translateY(-2px);}
+  .kpi-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .kpi-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .kpi-trend{font-family:'DM Mono',monospace;font-size:11px;padding:2px 8px;border-radius:6px;}
+  .up{background:rgba(16,201,138,0.1);color:var(--green);}
+  .dn{background:rgba(240,80,80,0.1);color:var(--red);}
+  .kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+  .kpi-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;}
+  .kpi-sub{font-size:11px;color:var(--dim);margin-top:4px;}
+
+  /* PANELS */
+  .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:18px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px;}
+  .panel-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px;}
+  .panel-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+  .chart-wrap{height:200px;}
+  .chart-sm{height:170px;}
+
+  /* COHORT TABLE */
+  .cohort-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .cohort-table th{padding:8px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);}
+  .cohort-table td{padding:10px;text-align:center;border-bottom:1px solid rgba(18,40,64,0.4);}
+  .cohort-table td:first-child{text-align:left;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+  .cell-heat{border-radius:6px;padding:4px 8px;display:inline-block;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+
+  /* PIPELINE */
+  .pipeline{display:flex;gap:0;}
+  .pipe-stage{flex:1;padding:16px 12px;text-align:center;border-right:1px solid var(--border);}
+  .pipe-stage:last-child{border-right:none;}
+  .pipe-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--blue);display:block;}
+  .pipe-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-top:4px;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .fade{animation:fadeUp 0.5s ease forwards;opacity:0;}
+  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}
+  @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to Portfolio</a>
+
+  <div class="fade d1">
+    <div class="proj-badge">PROJECT 02 · ISP.NET · SQL → POWER BI</div>
+    <h1>Executive KPI<br>Dashboard</h1>
+    <p class="proj-sub">End-to-end automated pipeline replacing manual spreadsheet workflows. Real-time visibility into ARPU, CLV, DSO, and churn metrics delivered weekly to COO and CEO — built on MariaDB queries piped into a Power BI executive report layer.</p>
+  </div>
+
+  <div class="filter-bar fade d1">
+    <button class="filter-btn active">Last 12 Months</button>
+    <button class="filter-btn">Q4 2024</button>
+    <button class="filter-btn">Q3 2024</button>
+    <button class="filter-btn">Enterprise</button>
+    <button class="filter-btn">Residential</button>
+    <button class="filter-btn">SMB</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis fade d2">
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(45,140,240,0.12)">💰</div>
+        <div class="kpi-trend up">↑ 6.2%</div>
+      </div>
+      <div class="kpi-lbl">Avg Revenue Per User</div>
+      <div class="kpi-val" style="color:var(--blue)">$94.80</div>
+      <div class="kpi-sub">vs $89.24 prior period</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(16,201,138,0.12)">📈</div>
+        <div class="kpi-trend up">↑ 11.4%</div>
+      </div>
+      <div class="kpi-lbl">Customer Lifetime Value</div>
+      <div class="kpi-val" style="color:var(--green)">$2,054</div>
+      <div class="kpi-sub">vs $1,844 prior period</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(240,168,50,0.1)">⏱</div>
+        <div class="kpi-trend dn">↓ 4.1 days</div>
+      </div>
+      <div class="kpi-lbl">Days Sales Outstanding</div>
+      <div class="kpi-val" style="color:var(--amber)">27.3</div>
+      <div class="kpi-sub">Target: ≤ 30 days</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(240,80,80,0.1)">📉</div>
+        <div class="kpi-trend up">↓ 0.4%</div>
+      </div>
+      <div class="kpi-lbl">Monthly Churn Rate</div>
+      <div class="kpi-val" style="color:var(--red)">1.8%</div>
+      <div class="kpi-sub">vs 2.2% prior period</div>
+    </div>
+  </div>
+
+  <!-- ARPU TREND + CHURN -->
+  <div class="row fade d3">
+    <div class="panel">
+      <div class="panel-title">ARPU &amp; Revenue Trend</div>
+      <div class="panel-sub">12-month trailing — all account types</div>
+      <div class="chart-wrap">
+        <canvas id="arpuChart"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Churn vs New Subscriptions</div>
+      <div class="panel-sub">Net subscriber movement</div>
+      <div class="chart-wrap">
+        <canvas id="churnChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- DSO + COHORT -->
+  <div class="row fade d3">
+    <div class="panel">
+      <div class="panel-title">Customer Retention Cohorts</div>
+      <div class="panel-sub">% of cohort still active by month-since-acquisition</div>
+      <table class="cohort-table">
+        <thead>
+          <tr>
+            <th>Cohort</th><th>M0</th><th>M1</th><th>M3</th><th>M6</th><th>M12</th>
+          </tr>
+        </thead>
+        <tbody id="cohortBody"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-title">DSO Monthly Trend</div>
+      <div class="panel-sub">Target: ≤ 30 days</div>
+      <div class="chart-sm" style="margin-bottom:20px">
+        <canvas id="dsoChart"></canvas>
+      </div>
+      <div class="panel-title" style="margin-top:4px">Revenue Pipeline</div>
+      <div class="panel-sub">Current month snapshot</div>
+      <div class="pipeline" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div class="pipe-stage"><span class="pipe-val">3,812</span><div class="pipe-lbl">Active</div></div>
+        <div class="pipe-stage"><span class="pipe-val">284</span><div class="pipe-lbl">At Risk</div></div>
+        <div class="pipe-stage"><span class="pipe-val">112</span><div class="pipe-lbl">Churned</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ARPU + Revenue Chart
+const arpuCtx = document.getElementById('arpuChart').getContext('2d');
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+new Chart(arpuCtx, {
+  data: {
+    labels: months,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Monthly Revenue ($K)',
+        data: [318,324,331,338,342,350,359,362,370,377,385,394],
+        backgroundColor: 'rgba(45,140,240,0.15)',
+        borderColor: 'rgba(45,140,240,0.5)',
+        borderWidth: 1.5,
+        borderRadius: 5,
+        yAxisID: 'y2',
+      },
+      {
+        type: 'line',
+        label: 'ARPU ($)',
+        data: [84.2,85.1,86.4,87.0,88.2,89.4,90.1,91.3,92.0,93.2,94.1,94.8],
+        borderColor: '#0ee7c2',
+        backgroundColor: 'rgba(14,231,194,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#0ee7c2',
+        pointRadius: 3,
+        tension: 0.4,
+        fill: true,
+      }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}}},
+      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10},callback:v=>'$'+v}},
+      y2:{position:'right',grid:{display:false},ticks:{color:'#3a5872',font:{family:'DM Mono',size:10},callback:v=>'$'+v+'K'}}
+    }
+  }
+});
+
+// Churn Chart
+const churnCtx = document.getElementById('churnChart').getContext('2d');
+new Chart(churnCtx, {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'New', data: [142,155,138,162,171,148,185,192,178,204,218,225], backgroundColor:'rgba(16,201,138,0.4)', borderColor:'rgba(16,201,138,0.8)', borderWidth:1.5, borderRadius:4 },
+      { label: 'Churned', data: [-88,-72,-95,-68,-74,-81,-62,-58,-71,-55,-52,-48], backgroundColor:'rgba(240,80,80,0.3)', borderColor:'rgba(240,80,80,0.7)', borderWidth:1.5, borderRadius:4 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}}},
+      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}},stacked:false}
+    }
+  }
+});
+
+// DSO Chart
+const dsoCtx = document.getElementById('dsoChart').getContext('2d');
+new Chart(dsoCtx, {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { data:[36,34,33,31,32,30,29,28,28,27,27,27], borderColor:'#f0a832', backgroundColor:'rgba(240,168,50,0.08)', borderWidth:2.5, pointBackgroundColor:'#f0a832', pointRadius:3, tension:0.4, fill:true },
+      { data:[30,30,30,30,30,30,30,30,30,30,30,30], borderColor:'rgba(240,80,80,0.4)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:9}}},
+      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:9}},min:20,max:42}
+    }
+  }
+});
+
+// Cohort Table
+const cohorts = [
+  {label:'Jan 2024', vals:[100,94,88,81,72]},
+  {label:'Mar 2024', vals:[100,96,90,84,76]},
+  {label:'May 2024', vals:[100,95,91,85,null]},
+  {label:'Jul 2024',  vals:[100,97,92,null,null]},
+  {label:'Oct 2024',  vals:[100,96,null,null,null]},
+];
+function heatColor(v) {
+  if(v===null) return {bg:'rgba(18,40,64,0.3)',color:'#3a5872',text:'—'};
+  if(v>=90) return {bg:'rgba(16,201,138,0.15)',color:'#10c98a',text:v+'%'};
+  if(v>=80) return {bg:'rgba(45,140,240,0.12)',color:'#2d8cf0',text:v+'%'};
+  if(v>=70) return {bg:'rgba(240,168,50,0.1)',color:'#f0a832',text:v+'%'};
+  return {bg:'rgba(240,80,80,0.1)',color:'#f05c5c',text:v+'%'};
+}
+const tb = document.getElementById('cohortBody');
+cohorts.forEach(c=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${c.label}</td>` + c.vals.map(v=>{
+    const h=heatColor(v);
+    return `<td><span class="cell-heat" style="background:${h.bg};color:${h.color}">${h.text}</span></td>`;
+  }).join('');
+  tb.appendChild(tr);
+});
+
+// Filter button behavior
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
