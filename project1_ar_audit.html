@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AR Recovery & Anomaly Audit — Aldo Guzman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #040d1a; --bg2: #071525; --card: #0b1d30; --card2: #0e2236;
+    --border: #122840; --blue: #2d8cf0; --teal: #0ee7c2;
+    --green: #10c98a; --amber: #f0a832; --red: #f05c5c;
+    --text: #e8f0fe; --muted: #7a9bb8; --dim: #3a5872;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(45,140,240,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(45,140,240,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 32px; position: relative; }
+
+  /* NAV */
+  .back { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; text-decoration: none; margin-bottom: 40px; transition: color 0.2s; }
+  .back:hover { color: var(--blue); }
+
+  /* HEADER */
+  .proj-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(240,80,80,0.1); border: 1px solid rgba(240,80,80,0.25); border-radius: 20px; padding: 4px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: #f05c5c; letter-spacing: 0.08em; margin-bottom: 16px; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 48px); font-weight: 800; line-height: 1.1; margin-bottom: 12px; }
+  .proj-sub { font-size: 16px; color: var(--muted); font-weight: 300; max-width: 680px; line-height: 1.7; margin-bottom: 40px; }
+
+  /* KPI CARDS */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  .kpi::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .kpi.green::after { background: var(--green); }
+  .kpi.red::after { background: var(--red); }
+  .kpi.amber::after { background: var(--amber); }
+  .kpi.blue::after { background: var(--blue); }
+  .kpi-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .kpi-val { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi.green .kpi-val { color: var(--green); }
+  .kpi.red .kpi-val { color: var(--red); }
+  .kpi.amber .kpi-val { color: var(--amber); }
+  .kpi.blue .kpi-val { color: var(--blue); }
+
+  /* GRID */
+  .row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .row2 { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+  .panel-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .panel-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { padding: 10px 12px; text-align: left; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid rgba(18,40,64,0.6); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(45,140,240,0.04); }
+  tbody td { padding: 12px 12px; color: var(--text); }
+  .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 10px; }
+  .s-recovered { background: rgba(16,201,138,0.1); color: var(--green); border: 1px solid rgba(16,201,138,0.2); }
+  .s-flagged { background: rgba(240,168,50,0.1); color: var(--amber); border: 1px solid rgba(240,168,50,0.2); }
+  .s-reviewing { background: rgba(45,140,240,0.1); color: var(--blue); border: 1px solid rgba(45,140,240,0.2); }
+  .s-escalated { background: rgba(240,80,80,0.1); color: var(--red); border: 1px solid rgba(240,80,80,0.2); }
+
+  /* SQL BLOCK */
+  .sql-block { background: #020b14; border: 1px solid var(--border); border-radius: 12px; padding: 24px; overflow-x: auto; }
+  .sql-block pre { font-family: 'DM Mono', monospace; font-size: 12.5px; line-height: 1.8; color: #b0c8e4; }
+  .kw { color: #569cd6; font-weight: 500; }
+  .fn { color: #dcdcaa; }
+  .str { color: #ce9178; }
+  .cm { color: #608b4e; font-style: italic; }
+  .num { color: #b5cea8; }
+  .op { color: var(--teal); }
+
+  /* CHART */
+  .chart-wrap { height: 220px; }
+
+  /* METHODOLOGY */
+  .steps { display: flex; flex-direction: column; gap: 14px; }
+  .step { display: flex; gap: 16px; align-items: flex-start; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(45,140,240,0.15); border: 1px solid rgba(45,140,240,0.3); color: var(--blue); font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-text h4 { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .step-text p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .fade { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+  .d1{animation-delay:.05s} .d2{animation-delay:.15s} .d3{animation-delay:.25s} .d4{animation-delay:.35s}
+
+  @media(max-width:700px){ .kpis{grid-template-columns:repeat(2,1fr)} .row{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to Portfolio</a>
+
+  <div class="fade d1">
+    <div class="proj-badge">PROJECT 01 · ISP.NET · 2021–PRESENT</div>
+    <h1>AR Recovery &amp;<br>Anomaly Audit</h1>
+    <p class="proj-sub">Systematic billing database audit that surfaced $127,450 in unallocated funds and credit memo discrepancies — combining SQL anomaly detection queries with structured ledger reconciliation to recover revenue that would otherwise remain buried.</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis fade d2">
+    <div class="kpi green">
+      <div class="kpi-lbl">Total Recovered</div>
+      <div class="kpi-val">$127K</div>
+      <div class="kpi-sub">Across 8-month audit</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-lbl">Accounts Audited</div>
+      <div class="kpi-val">1,240</div>
+      <div class="kpi-sub">Business &amp; residential</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-lbl">Anomalies Flagged</div>
+      <div class="kpi-val">84</div>
+      <div class="kpi-sub">Requiring review</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-lbl">Recovery Rate</div>
+      <div class="kpi-val">91%</div>
+      <div class="kpi-sub">Of flagged accounts</div>
+    </div>
+  </div>
+
+  <!-- CHART + METHODOLOGY -->
+  <div class="row fade d3">
+    <div class="panel">
+      <div class="panel-title">Monthly Recovery Progress</div>
+      <div class="panel-sub">Cumulative funds recovered over audit period (USD)</div>
+      <div class="chart-wrap">
+        <canvas id="recoveryChart"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Audit Methodology</div>
+      <div class="panel-sub">4-phase approach</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-text">
+            <h4>Data Extraction</h4>
+            <p>Pulled raw billing, credit memo, and payment records from MariaDB across all account types.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-text">
+            <h4>Anomaly Detection</h4>
+            <p>Wrote aggregate SQL queries to surface accounts where credits exceeded invoiced amounts or remained unapplied &gt;90 days.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-text">
+            <h4>Ledger Reconciliation</h4>
+            <p>Cross-referenced flagged accounts against payment history and invoice trails to confirm discrepancy type.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-text">
+            <h4>Recovery Action</h4>
+            <p>Coordinated with billing team to reallocate funds, correct entries, and implement validation rules.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="panel fade d3" style="margin-bottom:20px">
+    <div class="panel-title">Anomaly Detection Results — Sample</div>
+    <div class="panel-sub">Flagged accounts with discrepancy type, amount, and resolution status</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Account ID</th>
+          <th>Type</th>
+          <th>Discrepancy Type</th>
+          <th>Amount</th>
+          <th>Days Open</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-00421</td><td>Enterprise</td><td>Unapplied Credit Memo</td><td style="color:var(--green)">$18,320</td><td>127</td><td><span class="status-badge s-recovered">Recovered</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-00758</td><td>Enterprise</td><td>Duplicate Payment</td><td style="color:var(--green)">$9,400</td><td>84</td><td><span class="status-badge s-recovered">Recovered</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-01102</td><td>SMB</td><td>Unallocated Fund</td><td style="color:var(--amber)">$5,210</td><td>61</td><td><span class="status-badge s-flagged">In Review</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-01387</td><td>Residential</td><td>Invoice Overbilling</td><td style="color:var(--green)">$1,840</td><td>38</td><td><span class="status-badge s-recovered">Recovered</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-01654</td><td>SMB</td><td>Credit Misapplication</td><td style="color:var(--green)">$3,775</td><td>95</td><td><span class="status-badge s-recovered">Recovered</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-01921</td><td>Enterprise</td><td>Unapplied Credit Memo</td><td style="color:var(--red)">$22,100</td><td>183</td><td><span class="status-badge s-escalated">Escalated</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-02145</td><td>Government</td><td>Contract Overpayment</td><td style="color:var(--green)">$11,680</td><td>74</td><td><span class="status-badge s-recovered">Recovered</span></td></tr>
+        <tr><td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">ACC-02388</td><td>SMB</td><td>Unallocated Fund</td><td style="color:var(--blue)">$2,940</td><td>22</td><td><span class="status-badge s-reviewing">Reviewing</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SQL -->
+  <div class="panel fade d4">
+    <div class="panel-title">SQL — Anomaly Detection Query</div>
+    <div class="panel-sub">Core query used to surface unapplied credits and unallocated funds</div>
+    <div class="sql-block">
+<pre><span class="cm">-- Identify accounts with credits exceeding invoiced amounts</span>
+<span class="cm">-- or funds unapplied for more than 90 days</span>
+
+<span class="kw">SELECT</span>
+    a.account_id,
+    a.account_type,
+    a.company_name,
+    <span class="fn">SUM</span>(inv.invoice_amount)                        <span class="kw">AS</span> total_invoiced,
+    <span class="fn">SUM</span>(pay.payment_amount)                        <span class="kw">AS</span> total_paid,
+    <span class="fn">SUM</span>(cm.credit_amount)                          <span class="kw">AS</span> total_credits,
+    (<span class="fn">SUM</span>(pay.payment_amount) - <span class="fn">SUM</span>(inv.invoice_amount)) <span class="kw">AS</span> net_balance,
+    <span class="fn">DATEDIFF</span>(<span class="fn">CURDATE</span>(), <span class="fn">MAX</span>(cm.credit_date))          <span class="kw">AS</span> days_unapplied,
+
+    <span class="kw">CASE</span>
+        <span class="kw">WHEN</span> cm.credit_amount <span class="op">&gt;</span> <span class="num">0</span> <span class="kw">AND</span> cm.applied_flag <span class="op">=</span> <span class="num">0</span>
+             <span class="kw">AND</span> <span class="fn">DATEDIFF</span>(<span class="fn">CURDATE</span>(), cm.credit_date) <span class="op">&gt;</span> <span class="num">90</span>
+             <span class="kw">THEN</span> <span class="str">'UNAPPLIED_CREDIT'</span>
+        <span class="kw">WHEN</span> (<span class="fn">SUM</span>(pay.payment_amount) - <span class="fn">SUM</span>(inv.invoice_amount)) <span class="op">&gt;</span> <span class="num">1000</span>
+             <span class="kw">THEN</span> <span class="str">'UNALLOCATED_FUND'</span>
+        <span class="kw">WHEN</span> <span class="fn">COUNT</span>(pay.payment_id) <span class="op">&gt;</span> <span class="fn">COUNT</span>(DISTINCT inv.invoice_id)
+             <span class="kw">THEN</span> <span class="str">'POSSIBLE_DUPLICATE'</span>
+        <span class="kw">ELSE</span> <span class="str">'REVIEW'</span>
+    <span class="kw">END</span> <span class="kw">AS</span> anomaly_type
+
+<span class="kw">FROM</span> accounts a
+<span class="kw">JOIN</span> invoices   inv <span class="kw">ON</span> a.account_id <span class="op">=</span> inv.account_id
+<span class="kw">JOIN</span> payments   pay <span class="kw">ON</span> a.account_id <span class="op">=</span> pay.account_id
+<span class="kw">LEFT JOIN</span> credit_memos cm  <span class="kw">ON</span> a.account_id <span class="op">=</span> cm.account_id
+
+<span class="kw">WHERE</span> inv.invoice_date <span class="op">&gt;=</span> <span class="fn">DATE_SUB</span>(<span class="fn">CURDATE</span>(), <span class="kw">INTERVAL</span> <span class="num">24</span> <span class="kw">MONTH</span>)
+
+<span class="kw">GROUP BY</span>
+    a.account_id, a.account_type, a.company_name, cm.credit_amount,
+    cm.applied_flag, cm.credit_date
+
+<span class="kw">HAVING</span>
+    net_balance <span class="op">&gt;</span> <span class="num">500</span>
+    <span class="kw">OR</span> (cm.credit_amount <span class="op">&gt;</span> <span class="num">0</span> <span class="kw">AND</span> days_unapplied <span class="op">&gt;</span> <span class="num">90</span>)
+
+<span class="kw">ORDER BY</span> net_balance <span class="kw">DESC</span>;</pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ctx = document.getElementById('recoveryChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'],
+    datasets: [{
+      label: 'Monthly Recovery ($)',
+      data: [8200, 14500, 11300, 22400, 18900, 24100, 16800, 10750],
+      backgroundColor: 'rgba(16,201,138,0.2)',
+      borderColor: 'rgba(16,201,138,0.8)',
+      borderWidth: 2,
+      borderRadius: 6,
+    },{
+      label: 'Cumulative ($)',
+      data: [8200, 22700, 34000, 56400, 75300, 99400, 116200, 126950],
+      type: 'line',
+      borderColor: '#2d8cf0',
+      backgroundColor: 'rgba(45,140,240,0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#2d8cf0',
+      pointRadius: 4,
+      tension: 0.4,
+      fill: true,
+      yAxisID: 'y2',
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(18,40,64,0.6)' }, ticks: { color: '#7a9bb8', font: { family: 'DM Mono', size: 10 } } },
+      y: { grid: { color: 'rgba(18,40,64,0.6)' }, ticks: { color: '#7a9bb8', font: { family: 'DM Mono', size: 10 }, callback: v => '$'+(v/1000)+'K' } },
+      y2: { position: 'right', grid: { display: false }, ticks: { color: '#3a5872', font: { family: 'DM Mono', size: 10 }, callback: v => '$'+(v/1000)+'K' } }
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aldo Guzman — Data Analytics Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #040d1a;
+    --bg2: #071525;
+    --card: #0b1d30;
+    --border: #122840;
+    --blue: #2d8cf0;
+    --blue2: #1a6fd4;
+    --teal: #0ee7c2;
+    --green: #10c98a;
+    --amber: #f0a832;
+    --red: #f05c5c;
+    --text: #e8f0fe;
+    --muted: #7a9bb8;
+    --dim: #3a5872;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(45,140,240,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45,140,240,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 600px; height: 600px; background: rgba(45,140,240,0.07); top: -200px; left: -150px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(14,231,194,0.05); bottom: 100px; right: -100px; }
+
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* ── HEADER ───────────────────────────────────────── */
+  header {
+    padding: 72px 0 56px;
+    border-bottom: 1px solid var(--border);
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(45,140,240,0.1);
+    border: 1px solid rgba(45,140,240,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+  }
+  .badge::before { content: '●'; font-size: 8px; color: var(--teal); }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .name-accent { color: var(--blue); }
+  .subtitle {
+    font-size: 18px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 24px;
+  }
+  .contact-row {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .contact-row span { color: var(--muted); }
+
+  /* ── STATS BAR ──────────────────────────────────── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 48px 0;
+  }
+  .stat {
+    background: var(--card);
+    padding: 24px 28px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--blue);
+    display: block;
+  }
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── SECTION LABEL ──────────────────────────────── */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 36px;
+  }
+
+  /* ── PROJECT CARDS ──────────────────────────────── */
+  .projects { margin-bottom: 80px; }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue), var(--teal));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card:hover {
+    border-color: rgba(45,140,240,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 16px;
+  }
+  .card-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .card-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .tags {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  .tag-blue { background: rgba(45,140,240,0.12); color: var(--blue); border: 1px solid rgba(45,140,240,0.25); }
+  .tag-teal { background: rgba(14,231,194,0.08); color: var(--teal); border: 1px solid rgba(14,231,194,0.2); }
+  .tag-green { background: rgba(16,201,138,0.08); color: var(--green); border: 1px solid rgba(16,201,138,0.2); }
+  .tag-amber { background: rgba(240,168,50,0.08); color: var(--amber); border: 1px solid rgba(240,168,50,0.2); }
+
+  .card-cta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+  }
+  .card-cta::after { content: '→'; transition: transform 0.2s; }
+  .card:hover .card-cta::after { transform: translateX(4px); }
+
+  .card-result {
+    position: absolute;
+    top: 32px; right: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  /* ── SKILLS SECTION ─────────────────────────────── */
+  .skills { margin-bottom: 80px; }
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .skill-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .skill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    flex-shrink: 0;
+  }
+  .skill-name { font-size: 13px; color: var(--muted); }
+
+  /* ── FOOTER ─────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  @media (max-width: 700px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .skills-grid { grid-template-columns: repeat(2, 1fr); }
+    footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+
+  /* entrance animation */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+  .d1 { animation-delay: 0.1s; }
+  .d2 { animation-delay: 0.2s; }
+  .d3 { animation-delay: 0.3s; }
+  .d4 { animation-delay: 0.4s; }
+  .d5 { animation-delay: 0.5s; }
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="container">
+  <!-- HEADER -->
+  <header class="fade-up d1">
+    <div class="badge">ANALYTICS PORTFOLIO — LAS VEGAS, NV</div>
+    <h1>ALDO <span class="name-accent">GUZMAN</span></h1>
+    <p class="subtitle">Operations Data Analyst · SQL · Power BI · Business Intelligence</p>
+    <div class="contact-row">
+      <span>Guzman.aldo33@gmail.com</span>
+      <span>(702) 358-4969</span>
+      <span>sites.google.com/view/datashift</span>
+    </div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar fade-up d2">
+    <div class="stat">
+      <span class="stat-val">$100K+</span>
+      <div class="stat-lbl">Revenue Recovered</div>
+    </div>
+    <div class="stat">
+      <span class="stat-val">20+</span>
+      <div class="stat-lbl">Locations Monitored</div>
+    </div>
+    <div class="stat">
+      <span class="stat-val">4+</span>
+      <div class="stat-lbl">Years in Analytics</div>
+    </div>
+    <div class="stat">
+      <span class="stat-val">C-Suite</span>
+      <div class="stat-lbl">Reporting Level</div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <section class="projects">
+    <div class="section-label fade-up d2">Featured Projects</div>
+    <h2 class="section-title fade-up d3">Real work. Measurable outcomes.</h2>
+    <div class="cards-grid">
+
+      <a class="card fade-up d3" href="project1_ar_audit.html">
+        <div class="card-num">PROJECT / 01</div>
+        <div class="card-icon" style="background:rgba(240,80,80,0.12);">🔍</div>
+        <div class="card-result" style="background:rgba(16,201,138,0.1);color:#10c98a;border:1px solid rgba(16,201,138,0.2);">$127K Recovered</div>
+        <div class="card-title">AR Recovery & Anomaly Audit</div>
+        <div class="card-desc">Systematic billing database audit that surfaced unallocated funds and credit memo discrepancies across ISP.NET accounts — translating raw ledger data into a structured recovery plan.</div>
+        <div class="tags">
+          <span class="tag tag-blue">SQL / MariaDB</span>
+          <span class="tag tag-teal">Anomaly Detection</span>
+          <span class="tag tag-green">AR Auditing</span>
+        </div>
+        <div class="card-cta">View Project</div>
+      </a>
+
+      <a class="card fade-up d3" href="project2_kpi_dashboard.html">
+        <div class="card-num">PROJECT / 02</div>
+        <div class="card-icon" style="background:rgba(45,140,240,0.12);">📊</div>
+        <div class="card-result" style="background:rgba(45,140,240,0.1);color:#2d8cf0;border:1px solid rgba(45,140,240,0.2);">C-Suite Reporting</div>
+        <div class="card-title">Executive KPI Dashboard</div>
+        <div class="card-desc">End-to-end SQL-to-Power BI pipeline replacing manual spreadsheet workflows. Real-time visibility into ARPU, CLV, DSO, and churn delivered weekly to COO and CEO.</div>
+        <div class="tags">
+          <span class="tag tag-blue">Power BI / DAX</span>
+          <span class="tag tag-teal">SQL Pipelines</span>
+          <span class="tag tag-amber">KPI Design</span>
+        </div>
+        <div class="card-cta">View Project</div>
+      </a>
+
+      <a class="card fade-up d4" href="project3_territory.html">
+        <div class="card-num">PROJECT / 03</div>
+        <div class="card-icon" style="background:rgba(240,168,50,0.1);">🗺️</div>
+        <div class="card-result" style="background:rgba(240,168,50,0.1);color:#f0a832;border:1px solid rgba(240,168,50,0.2);">Las Vegas Metro</div>
+        <div class="card-title">Sales Territory Optimizer</div>
+        <div class="card-desc">ZIP-code-based territory management system using demographic and population density data. Built an HTML lookup tool deployed for the Las Vegas field sales team to ensure equitable coverage.</div>
+        <div class="tags">
+          <span class="tag tag-amber">GIS / Mapping</span>
+          <span class="tag tag-blue">Data Modeling</span>
+          <span class="tag tag-teal">JavaScript</span>
+        </div>
+        <div class="card-cta">View Project</div>
+      </a>
+
+      <a class="card fade-up d4" href="project4_campaign.html">
+        <div class="card-num">PROJECT / 04</div>
+        <div class="card-icon" style="background:rgba(14,231,194,0.08);">📣</div>
+        <div class="card-result" style="background:rgba(14,231,194,0.08);color:#0ee7c2;border:1px solid rgba(14,231,194,0.2);">↓ CPA Improved</div>
+        <div class="card-title">Marketing Campaign Analytics</div>
+        <div class="card-desc">Facebook Ads performance analysis and Meta Custom Audiences compliance research providing data-backed recommendations that improved targeting efficiency and reduced cost-per-acquisition.</div>
+        <div class="tags">
+          <span class="tag tag-teal">Meta Ads API</span>
+          <span class="tag tag-blue">Campaign Analytics</span>
+          <span class="tag tag-green">ROI Modeling</span>
+        </div>
+        <div class="card-cta">View Project</div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section class="skills fade-up d5">
+    <div class="section-label">Technical Stack</div>
+    <h2 class="section-title">Tools & Technologies</h2>
+    <div class="skills-grid">
+      <div class="skill-item"><div class="skill-dot" style="background:#2d8cf0"></div><div class="skill-name">MySQL / MariaDB</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#2d8cf0"></div><div class="skill-name">Power BI (DAX, M Language)</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#0ee7c2"></div><div class="skill-name">Advanced Excel</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#0ee7c2"></div><div class="skill-name">JavaScript / Python</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#f0a832"></div><div class="skill-name">Generative AI & Prompt Eng.</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#f0a832"></div><div class="skill-name">KPI Dashboard Design</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#10c98a"></div><div class="skill-name">AR Auditing & Reconciliation</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#10c98a"></div><div class="skill-name">Predictive Analytics</div></div>
+      <div class="skill-item"><div class="skill-dot" style="background:#f05c5c"></div><div class="skill-name">SOC 1 Type II Audit Review</div></div>
+    </div>
+  </section>
+
+  <footer class="fade-up d5">
+    <span>© 2025 Aldo Guzman · Operations Data Analyst</span>
+    <span>Las Vegas, NV · sites.google.com/view/datashift</span>
+  </footer>
+</div>
+</body>
+</html>
