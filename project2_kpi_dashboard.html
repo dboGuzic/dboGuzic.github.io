@@ -180,98 +180,189 @@
 </div>
 
 <script>
-// ARPU + Revenue Chart
+// ─── DATASET DEFINITIONS ──────────────────────────────────────────────────────
+// Each key maps to one filter button. Every dataset has:
+//   labels, arpu[], revenue[], newSubs[], churnedSubs[], dso[]
+//   kpis: { arpu, clv, dso, churn, arpuDelta, clvDelta, dsoDelta, churnDelta }
+//   pipeline: { active, atRisk, churned }
+//   cohorts: [ {label, vals:[M0,M1,M3,M6,M12]} ]
+
+const DATASETS = {
+  'Last 12 Months': {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    arpu:    [84.2,85.1,86.4,87.0,88.2,89.4,90.1,91.3,92.0,93.2,94.1,94.8],
+    revenue: [318,324,331,338,342,350,359,362,370,377,385,394],
+    newSubs: [142,155,138,162,171,148,185,192,178,204,218,225],
+    churned: [-88,-72,-95,-68,-74,-81,-62,-58,-71,-55,-52,-48],
+    dso:     [36,34,33,31,32,30,29,28,28,27,27,27],
+    kpis: { arpu:'$94.80', clv:'$2,054', dso:'27.3', churn:'1.8%',
+            arpuTrend:'up', arpuDelta:'↑ 6.2%', arpuSub:'vs $89.24 prior period',
+            clvTrend:'up',  clvDelta:'↑ 11.4%', clvSub:'vs $1,844 prior period',
+            dsoTrend:'dn',  dsoDelta:'↓ 4.1 days', dsoSub:'Target: ≤ 30 days',
+            churnTrend:'up',churnDelta:'↓ 0.4%', churnSub:'vs 2.2% prior period' },
+    pipeline: { active:'3,812', atRisk:'284', churned:'112' },
+    cohorts: [
+      {label:'Jan 2024', vals:[100,94,88,81,72]},
+      {label:'Mar 2024', vals:[100,96,90,84,76]},
+      {label:'May 2024', vals:[100,95,91,85,null]},
+      {label:'Jul 2024',  vals:[100,97,92,null,null]},
+      {label:'Oct 2024',  vals:[100,96,null,null,null]},
+    ]
+  },
+  'Q4 2024': {
+    labels: ['Oct','Nov','Dec'],
+    arpu:    [93.2,94.1,94.8],
+    revenue: [377,385,394],
+    newSubs: [204,218,225],
+    churned: [-55,-52,-48],
+    dso:     [27,27,27],
+    kpis: { arpu:'$94.80', clv:'$2,120', dso:'27.0', churn:'1.6%',
+            arpuTrend:'up', arpuDelta:'↑ 2.8%', arpuSub:'vs $92.2 in Q3',
+            clvTrend:'up',  clvDelta:'↑ 3.2%', clvSub:'vs $2,054 in Q3',
+            dsoTrend:'dn',  dsoDelta:'↓ 1.0 day', dsoSub:'Best quarter on record',
+            churnTrend:'up',churnDelta:'↓ 0.2%', churnSub:'vs 1.8% in Q3' },
+    pipeline: { active:'3,812', atRisk:'218', churned:'48' },
+    cohorts: [
+      {label:'Oct 2024', vals:[100,96,null,null,null]},
+      {label:'Nov 2024', vals:[100,97,null,null,null]},
+      {label:'Dec 2024', vals:[100,null,null,null,null]},
+    ]
+  },
+  'Q3 2024': {
+    labels: ['Jul','Aug','Sep'],
+    arpu:    [90.1,91.3,92.0],
+    revenue: [359,362,370],
+    newSubs: [185,192,178],
+    churned: [-62,-58,-71],
+    dso:     [29,28,28],
+    kpis: { arpu:'$92.00', clv:'$2,054', dso:'28.3', churn:'1.9%',
+            arpuTrend:'up', arpuDelta:'↑ 4.3%', arpuSub:'vs $88.2 in Q2',
+            clvTrend:'up',  clvDelta:'↑ 5.6%', clvSub:'vs $1,946 in Q2',
+            dsoTrend:'dn',  dsoDelta:'↓ 2.6 days', dsoSub:'Target: ≤ 30 days',
+            churnTrend:'up',churnDelta:'↓ 0.3%', churnSub:'vs 2.2% in Q2' },
+    pipeline: { active:'3,644', atRisk:'262', churned:'71' },
+    cohorts: [
+      {label:'Jul 2024', vals:[100,97,92,null,null]},
+      {label:'Aug 2024', vals:[100,96,91,null,null]},
+      {label:'Sep 2024', vals:[100,95,null,null,null]},
+    ]
+  },
+  'Enterprise': {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    arpu:    [312,318,325,330,338,344,350,358,365,372,380,388],
+    revenue: [124,128,132,136,140,144,148,152,156,160,164,168],
+    newSubs: [8,10,7,11,9,8,12,14,11,15,16,18],
+    churned: [-3,-2,-4,-2,-3,-4,-2,-2,-3,-2,-2,-2],
+    dso:     [42,40,38,37,36,35,34,33,32,31,30,29],
+    kpis: { arpu:'$388', clv:'$11,640', dso:'29.0', churn:'0.6%',
+            arpuTrend:'up', arpuDelta:'↑ 8.1%', arpuSub:'vs $358.90 prior period',
+            clvTrend:'up',  clvDelta:'↑ 9.3%', clvSub:'vs $10,650 prior period',
+            dsoTrend:'dn',  dsoDelta:'↓ 13 days', dsoSub:'Improved via contract terms',
+            churnTrend:'up',churnDelta:'↓ 0.1%', churnSub:'Lowest segment churn' },
+    pipeline: { active:'432', atRisk:'28', churned:'8' },
+    cohorts: [
+      {label:'Jan 2024', vals:[100,98,96,93,89]},
+      {label:'Mar 2024', vals:[100,99,97,94,91]},
+      {label:'May 2024', vals:[100,98,96,94,null]},
+      {label:'Jul 2024',  vals:[100,99,97,null,null]},
+      {label:'Oct 2024',  vals:[100,98,null,null,null]},
+    ]
+  },
+  'Residential': {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    arpu:    [62.4,63.1,64.0,64.8,65.5,66.2,67.0,68.1,68.9,69.8,70.4,71.2],
+    revenue: [148,152,155,158,161,164,168,171,174,178,181,185],
+    newSubs: [98,104,92,108,115,102,128,134,118,142,152,158],
+    churned: [-68,-56,-74,-54,-58,-64,-48,-44,-56,-42,-40,-36],
+    dso:     [22,21,20,21,20,19,18,18,19,18,17,17],
+    kpis: { arpu:'$71.20', clv:'$1,282', dso:'17.3', churn:'2.4%',
+            arpuTrend:'up', arpuDelta:'↑ 5.4%', arpuSub:'vs $67.5 prior period',
+            clvTrend:'up',  clvDelta:'↑ 4.8%', clvSub:'vs $1,223 prior period',
+            dsoTrend:'dn',  dsoDelta:'↓ 4.7 days', dsoSub:'Best-in-class DSO',
+            churnTrend:'up',churnDelta:'↓ 0.6%', churnSub:'vs 3.0% prior period' },
+    pipeline: { active:'2,580', atRisk:'188', churned:'84' },
+    cohorts: [
+      {label:'Jan 2024', vals:[100,92,84,76,66]},
+      {label:'Mar 2024', vals:[100,93,86,78,68]},
+      {label:'May 2024', vals:[100,94,87,79,null]},
+      {label:'Jul 2024',  vals:[100,95,88,null,null]},
+      {label:'Oct 2024',  vals:[100,94,null,null,null]},
+    ]
+  },
+  'SMB': {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    arpu:    [118,120,122,124,126,128,130,132,134,136,138,140],
+    revenue: [46,48,49,50,51,53,54,55,57,58,60,61],
+    newSubs: [36,41,39,43,47,38,45,44,49,47,50,49],
+    churned: [-17,-14,-17,-12,-13,-13,-12,-12,-12,-11,-10,-10],
+    dso:     [34,33,32,30,31,29,28,27,27,26,26,25],
+    kpis: { arpu:'$140', clv:'$3,920', dso:'25.4', churn:'2.1%',
+            arpuTrend:'up', arpuDelta:'↑ 7.0%', arpuSub:'vs $130.8 prior period',
+            clvTrend:'up',  clvDelta:'↑ 6.2%', clvSub:'vs $3,692 prior period',
+            dsoTrend:'dn',  dsoDelta:'↓ 8.6 days', dsoSub:'Target: ≤ 30 days',
+            churnTrend:'up',churnDelta:'↓ 0.5%', churnSub:'vs 2.6% prior period' },
+    pipeline: { active:'800', atRisk:'58', churned:'20' },
+    cohorts: [
+      {label:'Jan 2024', vals:[100,95,90,83,74]},
+      {label:'Mar 2024', vals:[100,96,91,85,76]},
+      {label:'May 2024', vals:[100,96,92,86,null]},
+      {label:'Jul 2024',  vals:[100,97,93,null,null]},
+      {label:'Oct 2024',  vals:[100,97,null,null,null]},
+    ]
+  }
+};
+
+// ─── CHART HELPERS ────────────────────────────────────────────────────────────
+const chartOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+};
+const gridColor = 'rgba(18,40,64,0.6)';
+const tickStyle = (sz=10) => ({ color:'#7a9bb8', font:{family:'DM Mono',size:sz} });
+
+// Build ARPU chart
 const arpuCtx = document.getElementById('arpuChart').getContext('2d');
-const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-new Chart(arpuCtx, {
-  data: {
-    labels: months,
-    datasets: [
-      {
-        type: 'bar',
-        label: 'Monthly Revenue ($K)',
-        data: [318,324,331,338,342,350,359,362,370,377,385,394],
-        backgroundColor: 'rgba(45,140,240,0.15)',
-        borderColor: 'rgba(45,140,240,0.5)',
-        borderWidth: 1.5,
-        borderRadius: 5,
-        yAxisID: 'y2',
-      },
-      {
-        type: 'line',
-        label: 'ARPU ($)',
-        data: [84.2,85.1,86.4,87.0,88.2,89.4,90.1,91.3,92.0,93.2,94.1,94.8],
-        borderColor: '#0ee7c2',
-        backgroundColor: 'rgba(14,231,194,0.08)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#0ee7c2',
-        pointRadius: 3,
-        tension: 0.4,
-        fill: true,
-      }
-    ]
-  },
-  options: {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{
-      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}}},
-      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10},callback:v=>'$'+v}},
-      y2:{position:'right',grid:{display:false},ticks:{color:'#3a5872',font:{family:'DM Mono',size:10},callback:v=>'$'+v+'K'}}
-    }
-  }
+const arpuChart = new Chart(arpuCtx, {
+  data: { labels:[], datasets:[
+    { type:'bar', yAxisID:'y2', backgroundColor:'rgba(45,140,240,0.15)', borderColor:'rgba(45,140,240,0.5)', borderWidth:1.5, borderRadius:5, data:[] },
+    { type:'line', borderColor:'#0ee7c2', backgroundColor:'rgba(14,231,194,0.08)', borderWidth:2.5, pointBackgroundColor:'#0ee7c2', pointRadius:3, tension:0.4, fill:true, data:[] }
+  ]},
+  options: { ...chartOpts, scales:{
+    x:{grid:{color:gridColor},ticks:tickStyle()},
+    y:{grid:{color:gridColor},ticks:{...tickStyle(),callback:v=>'$'+v}},
+    y2:{position:'right',grid:{display:false},ticks:{...tickStyle(),color:'#3a5872',callback:v=>'$'+v+'K'}}
+  }}
 });
 
-// Churn Chart
+// Build Churn chart
 const churnCtx = document.getElementById('churnChart').getContext('2d');
-new Chart(churnCtx, {
-  type: 'bar',
-  data: {
-    labels: months,
-    datasets: [
-      { label: 'New', data: [142,155,138,162,171,148,185,192,178,204,218,225], backgroundColor:'rgba(16,201,138,0.4)', borderColor:'rgba(16,201,138,0.8)', borderWidth:1.5, borderRadius:4 },
-      { label: 'Churned', data: [-88,-72,-95,-68,-74,-81,-62,-58,-71,-55,-52,-48], backgroundColor:'rgba(240,80,80,0.3)', borderColor:'rgba(240,80,80,0.7)', borderWidth:1.5, borderRadius:4 }
-    ]
-  },
-  options: {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display:false } },
-    scales:{
-      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}}},
-      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:10}},stacked:false}
-    }
-  }
+const churnChart = new Chart(churnCtx, {
+  type:'bar',
+  data:{ labels:[], datasets:[
+    { backgroundColor:'rgba(16,201,138,0.4)', borderColor:'rgba(16,201,138,0.8)', borderWidth:1.5, borderRadius:4, data:[] },
+    { backgroundColor:'rgba(240,80,80,0.3)', borderColor:'rgba(240,80,80,0.7)', borderWidth:1.5, borderRadius:4, data:[] }
+  ]},
+  options:{ ...chartOpts, scales:{
+    x:{grid:{color:gridColor},ticks:tickStyle()},
+    y:{grid:{color:gridColor},ticks:tickStyle()}
+  }}
 });
 
-// DSO Chart
+// Build DSO chart
 const dsoCtx = document.getElementById('dsoChart').getContext('2d');
-new Chart(dsoCtx, {
-  type: 'line',
-  data: {
-    labels: months,
-    datasets: [
-      { data:[36,34,33,31,32,30,29,28,28,27,27,27], borderColor:'#f0a832', backgroundColor:'rgba(240,168,50,0.08)', borderWidth:2.5, pointBackgroundColor:'#f0a832', pointRadius:3, tension:0.4, fill:true },
-      { data:[30,30,30,30,30,30,30,30,30,30,30,30], borderColor:'rgba(240,80,80,0.4)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false }
-    ]
-  },
-  options: {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{
-      x:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:9}}},
-      y:{grid:{color:'rgba(18,40,64,0.6)'},ticks:{color:'#7a9bb8',font:{family:'DM Mono',size:9}},min:20,max:42}
-    }
-  }
+const dsoChart = new Chart(dsoCtx, {
+  type:'line',
+  data:{ labels:[], datasets:[
+    { borderColor:'#f0a832', backgroundColor:'rgba(240,168,50,0.08)', borderWidth:2.5, pointBackgroundColor:'#f0a832', pointRadius:3, tension:0.4, fill:true, data:[] },
+    { borderColor:'rgba(240,80,80,0.4)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false, data:[] }
+  ]},
+  options:{ ...chartOpts, scales:{
+    x:{grid:{color:gridColor},ticks:tickStyle(9)},
+    y:{grid:{color:gridColor},ticks:{...tickStyle(9)},min:14,max:48}
+  }}
 });
 
-// Cohort Table
-const cohorts = [
-  {label:'Jan 2024', vals:[100,94,88,81,72]},
-  {label:'Mar 2024', vals:[100,96,90,84,76]},
-  {label:'May 2024', vals:[100,95,91,85,null]},
-  {label:'Jul 2024',  vals:[100,97,92,null,null]},
-  {label:'Oct 2024',  vals:[100,96,null,null,null]},
-];
+// ─── COHORT RENDERER ──────────────────────────────────────────────────────────
 function heatColor(v) {
   if(v===null) return {bg:'rgba(18,40,64,0.3)',color:'#3a5872',text:'—'};
   if(v>=90) return {bg:'rgba(16,201,138,0.15)',color:'#10c98a',text:v+'%'};
@@ -279,23 +370,100 @@ function heatColor(v) {
   if(v>=70) return {bg:'rgba(240,168,50,0.1)',color:'#f0a832',text:v+'%'};
   return {bg:'rgba(240,80,80,0.1)',color:'#f05c5c',text:v+'%'};
 }
-const tb = document.getElementById('cohortBody');
-cohorts.forEach(c=>{
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${c.label}</td>` + c.vals.map(v=>{
-    const h=heatColor(v);
-    return `<td><span class="cell-heat" style="background:${h.bg};color:${h.color}">${h.text}</span></td>`;
-  }).join('');
-  tb.appendChild(tr);
-});
+function renderCohorts(cohorts) {
+  const tb = document.getElementById('cohortBody');
+  tb.innerHTML = '';
+  cohorts.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.label}</td>` + c.vals.map(v=>{
+      const h = heatColor(v);
+      return `<td><span class="cell-heat" style="background:${h.bg};color:${h.color}">${h.text}</span></td>`;
+    }).join('');
+    tb.appendChild(tr);
+  });
+}
 
-// Filter button behavior
-document.querySelectorAll('.filter-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+// ─── KPI UPDATER ─────────────────────────────────────────────────────────────
+function updateKPIs(k) {
+  const cards = document.querySelectorAll('.kpi');
+  // ARPU
+  cards[0].querySelector('.kpi-val').textContent  = k.arpu;
+  cards[0].querySelector('.kpi-trend').textContent = k.arpuDelta;
+  cards[0].querySelector('.kpi-trend').className  = 'kpi-trend ' + k.arpuTrend;
+  cards[0].querySelector('.kpi-sub').textContent   = k.arpuSub;
+  // CLV
+  cards[1].querySelector('.kpi-val').textContent  = k.clv;
+  cards[1].querySelector('.kpi-trend').textContent = k.clvDelta;
+  cards[1].querySelector('.kpi-trend').className  = 'kpi-trend ' + k.clvTrend;
+  cards[1].querySelector('.kpi-sub').textContent   = k.clvSub;
+  // DSO
+  cards[2].querySelector('.kpi-val').textContent  = k.dso;
+  cards[2].querySelector('.kpi-trend').textContent = k.dsoDelta;
+  cards[2].querySelector('.kpi-trend').className  = 'kpi-trend ' + k.dsoTrend;
+  cards[2].querySelector('.kpi-sub').textContent   = k.dsoSub;
+  // Churn
+  cards[3].querySelector('.kpi-val').textContent  = k.churn;
+  cards[3].querySelector('.kpi-trend').textContent = k.churnDelta;
+  cards[3].querySelector('.kpi-trend').className  = 'kpi-trend ' + k.churnTrend;
+  cards[3].querySelector('.kpi-sub').textContent   = k.churnSub;
+}
+
+// ─── PIPELINE UPDATER ────────────────────────────────────────────────────────
+function updatePipeline(p) {
+  const stages = document.querySelectorAll('.pipe-val');
+  stages[0].textContent = p.active;
+  stages[1].textContent = p.atRisk;
+  stages[2].textContent = p.churned;
+}
+
+// ─── PANEL SUBTITLE UPDATER ──────────────────────────────────────────────────
+function updateSubtitles(filterName) {
+  const arpuSub = document.querySelector('#arpuChart').closest('.panel').querySelector('.panel-sub');
+  const churnSub = document.querySelector('#churnChart').closest('.panel').querySelector('.panel-sub');
+  const isQuarter = filterName.startsWith('Q');
+  arpuSub.textContent  = isQuarter ? filterName + ' period — all account types' : '12-month trailing — all account types';
+  churnSub.textContent = isQuarter ? 'Net subscriber movement — ' + filterName : 'Net subscriber movement';
+}
+
+// ─── MAIN APPLY FUNCTION ─────────────────────────────────────────────────────
+function applyFilter(name) {
+  const d = DATASETS[name];
+
+  // Update charts
+  const target = 30; // DSO target line
+  arpuChart.data.labels                 = d.labels;
+  arpuChart.data.datasets[0].data       = d.revenue;
+  arpuChart.data.datasets[1].data       = d.arpu;
+  arpuChart.update('active');
+
+  churnChart.data.labels                = d.labels;
+  churnChart.data.datasets[0].data      = d.newSubs;
+  churnChart.data.datasets[1].data      = d.churned;
+  churnChart.update('active');
+
+  dsoChart.data.labels                  = d.labels;
+  dsoChart.data.datasets[0].data        = d.dso;
+  dsoChart.data.datasets[1].data        = d.labels.map(()=>target);
+  dsoChart.update('active');
+
+  // Update KPI cards, cohort table, pipeline
+  updateKPIs(d.kpis);
+  renderCohorts(d.cohorts);
+  updatePipeline(d.pipeline);
+  updateSubtitles(name);
+}
+
+// ─── FILTER BUTTON WIRING ────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    applyFilter(btn.textContent.trim());
   });
 });
+
+// Initialize with default view
+applyFilter('Last 12 Months');
 </script>
 </body>
 </html>
